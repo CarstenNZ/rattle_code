@@ -199,3 +199,4 @@ pip-selfcheck.json
 
 # project specific
 output/
+tests/expected

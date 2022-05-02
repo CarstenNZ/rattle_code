@@ -455,57 +455,52 @@ class InternalRecover(object):
                         self.functions.append(fallthrough)
 
     def split_inline_functions(self, function: SSAFunction) -> None:
+        def find_exits(start: SSABasicBlock, end: SSABasicBlock) -> None:
+            blocks.add(end)
+
+            if start.fallthrough_edge == end:
+                return
+
+            if end in start.jump_edges:
+                return
+
+            if start in blocks:
+                return
+
+            blocks.add(start)
+
+            if start.fallthrough_edge:
+                find_exits(start.fallthrough_edge, end)
+
+            for jump in start.jump_edges:
+                find_exits(jump, end)
+        # <def
+
         # Find inline function calls
-        for block in function:
-            for insn in block:
-                '''
-                Find blocks that JUMP or JUMPI to a target defined from a different block
-                '''
+        for this_block in function:
+            for insn in this_block:
+                # Find blocks that JUMP or JUMPI (i.e. return) to a target defined from a different block
+
+                # only jumps
                 if not insn.insn.is_branch:
                     continue
 
-                if len(insn.arguments) < 1:
+                # phi for multiple possible return addresses, otherwise it's just a jump
+                ret_adr_phi = insn.arguments[0].writer
+                if ret_adr_phi is None or not isinstance(ret_adr_phi.insn, PHIInstruction):
                     continue
 
-                writer = cast(SSAInstruction, insn.arguments[0].writer)
+                starts = [ret_adr.writer.parent_block for ret_adr in ret_adr_phi]
 
-                if writer is None:
-                    continue
-
-                if not isinstance(writer.insn, PHIInstruction):
-                    continue
-
-                starts = [x.writer.parent_block for x in writer]
-
-                if not any([x != insn.parent_block for x in starts]):
+                if not any([x != this_block for x in starts]):
                     continue
 
                 blocks = set()
 
-                def find_exits(start: SSABasicBlock, end: SSABasicBlock) -> None:
-                    blocks.add(end)
-
-                    if start.fallthrough_edge == end:
-                        return
-
-                    if end in start.jump_edges:
-                        return
-
-                    if start in blocks:
-                        return
-
-                    blocks.add(start)
-
-                    if start.fallthrough_edge:
-                        find_exits(start.fallthrough_edge, end)
-
-                    for jump in start.jump_edges:
-                        find_exits(jump, end)
-
                 for start in starts:
                     find_exits(start, insn.parent_block)
 
-                print(f"Inline function identified between {writer.offset:#x} {writer} and {insn.offset:#x} {insn}")
+                print(f"Inline function identified between {ret_adr_phi.offset:x}: {ret_adr_phi} and {insn.offset:x}: {insn}")
                 print(list([f"{x.offset:#x}" for x in blocks]))
                 print("\n\n")
 

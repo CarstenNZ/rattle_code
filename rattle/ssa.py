@@ -42,9 +42,6 @@ class InternalCallOp(EVMAsm.EVMInstruction):
 
 
 class StackValue(object):
-    _writer: Optional['SSAInstruction'] = None
-    _readers: Set['SSAInstruction']
-
     def __init__(self, value: int) -> None:
         self.value = value
         self._writer = None
@@ -543,10 +540,10 @@ class SSABasicBlock(object):
                 break
 
     def print(self, prefix='', no_instr=False):
-        in_edges = ', '.join(hex(b.offset) for b in self.in_edges)
-        out_edges = ', '.join(hex(b.offset) for b in self.out_edges)
-        instr = "" if no_instr else "\n".join(i.print(prefix=f'{prefix}\t{i.offset:#x}: ') for i in self.insns)
-        return f"{prefix}BasicBlock {self.offset:#x}, in: {in_edges or '<start>'}, out: {out_edges or '<end>'}\n{instr}"
+        in_edges = ', '.join(f"<{b.offset:x}" for b in self.in_edges)
+        out_edges = ', '.join(f">{b.offset:x}" for b in self.out_edges)
+        instr = "" if no_instr else "\n".join(i.print(prefix=f'{prefix}\t{i.offset:x}: ') for i in self.insns)
+        return f"{prefix}BasicBlock {self.offset:x}, {in_edges} | {out_edges}\n{instr}"
 
 
 

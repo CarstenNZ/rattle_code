@@ -7,8 +7,6 @@ logger = logging.getLogger(__name__)
 
 
 class UseDefGraph(object):
-    value: StackValue
-
     def __init__(self, value: StackValue) -> None:
         self.value = value
 
@@ -51,8 +49,6 @@ class UseDefGraph(object):
 
 
 class DefUseGraph(object):
-    value: StackValue
-
     def __init__(self, value: StackValue) -> None:
         self.value = value
 
