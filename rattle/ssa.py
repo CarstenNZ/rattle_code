@@ -21,18 +21,14 @@ class PHIRemovalException(Exception):
 
 
 class PHIInstruction(EVMAsm.EVMInstruction):
-    original: 'PlaceholderStackValue'
-
     def __init__(self, args: int, original: 'PlaceholderStackValue', offset: int = 0) -> None:
         super().__init__(0x100, "PHI", 0, args, 1, 0, "SSA PHI Node", 0, offset)
-        self.original = original
+        self.original: 'PlaceholderStackValue' = original
 
 
 class MethodDispatch(EVMAsm.EVMInstruction):
-    target: 'SSAFunction'
-
     def __init__(self, target: 'SSAFunction', args: int, offset: int = 0) -> None:
-        self.target = target
+        self.target: 'SSAFunction' = target
         super().__init__(0x101, "CONDICALL", 0, args, 1, 0, "Conditional Internal Call", 0, offset)
 
 
@@ -115,13 +111,10 @@ class ConcreteStackValue(StackValue):
 
 
 class PlaceholderStackValue(StackValue):
-    sp: int
-    block: 'SSABasicBlock'
-    resolving: bool = False
-
     def __init__(self, sp: int, block: 'SSABasicBlock') -> None:
-        self.sp = sp
-        self.block = block
+        self.sp: int = sp
+        self.block: 'SSABasicBlock' = block
+        self.resolving = False
         super().__init__(-1)
 
     def __repr__(self) -> str:
@@ -229,19 +222,14 @@ class PlaceholderStackValue(StackValue):
 
 
 class SSAInstruction(object):
-    insn: EVMAsm.EVMInstruction
-    offset: int
-    arguments: List[StackValue]
-    parent_block: 'SSABasicBlock'
-    _return_value: Optional[StackValue]
-    comment = None
-
     def __init__(self, evminsn: EVMAsm.EVMInstruction, parent_block: 'SSABasicBlock') -> None:
-        self.insn = evminsn
-        self.arguments = []
-        self._return_value = None
-        self.offset = evminsn.pc
-        self.parent_block = parent_block
+        self.insn: EVMAsm.EVMInstruction = evminsn
+        self.arguments: List[StackValue] = []
+        self.offset: int = evminsn.pc
+        self.parent_block: SSABasicBlock = parent_block
+        self.comment: Optional[str] = None
+
+        self._return_value: Optional[StackValue] = None
 
     def __repr__(self) -> str:
         def key_for_PHI_arguments(sv: StackValue):
@@ -413,29 +401,18 @@ class SSAInstruction(object):
 
 
 class SSABasicBlock(object):
-    function: 'SSAFunction'
-    offset: int
-    insns: List[SSAInstruction]
-    end: int
-
-    in_edges: Set['SSABasicBlock']
-    fallthrough_edge: Optional['SSABasicBlock']
-    jump_edges: Set['SSABasicBlock']
-
-    stack: List[StackValue]
-
     def __init__(self, offset: int, function: 'SSAFunction') -> None:
-        self.offset = offset
-        self.end = offset
-        self.function = function
+        self.offset:int = offset
+        self.end: int = offset
+        self.function: 'SSAFunction' = function
         self.function.add_block(self)
 
-        self.in_edges = set()
-        self.fallthrough_edge = None
-        self.jump_edges = set()
+        self.in_edges: Set = set()
+        self.fallthrough_edge: Optional['SSABasicBlock'] = None
+        self.jump_edges: Set['SSABasicBlock'] = set()
 
         self.insns = []
-        self.stack = [PlaceholderStackValue(-x, self) for x in range(32, 0, -1)]
+        self.stack: List[StackValue] = [PlaceholderStackValue(-x, self) for x in range(32, 0, -1)]
 
     def __repr__(self) -> str:
         insns = []
@@ -548,23 +525,16 @@ class SSABasicBlock(object):
 
 
 class SSAFunction(object):
-    blocks: List[SSABasicBlock]
-    blockmap: Dict[int, SSABasicBlock]
-    name: str
-    _hash: int
-    offset: int
-    phis: Dict[StackValue, SSAInstruction]
-
     num_values: int = 0
 
     def __init__(self, offset: int, name: str = '', hash: int = 0) -> None:
-        self.name = name
-        self.hash = hash
-        self.offset = offset
+        self.name: str = name
+        self._hash: int = hash
+        self.offset: int = offset
 
-        self.blocks = []
-        self.blockmap = {}
-        self.phis = {}
+        self.blocks: List[SSABasicBlock] = []
+        self.blockmap: Dict[int, SSABasicBlock] = {}
+        self.phis: Dict[StackValue, SSAInstruction] = {}
 
     def __repr__(self) -> str:
         blocks = '\n'.join([f'{x}' for x in self.blocks])
@@ -796,11 +766,9 @@ class SSAFunction(object):
 
 
 class InternalCall(SSAInstruction):
-    target: SSAFunction
-
     def __init__(self, target: SSAFunction, args: int, offset: int, parent_block: 'SSABasicBlock') -> None:
         super().__init__(InternalCallOp(args, offset), parent_block)
-        self.target = target
+        self.target: SSAFunction = target
 
     def __repr__(self) -> str:
         rv: str = ''
@@ -818,11 +786,9 @@ class InternalCall(SSAInstruction):
 
 
 class ConditionalInternalCall(SSAInstruction):
-    target: SSAFunction
-
     def __init__(self, target: SSAFunction, args: int, offset: int, parent_block: 'SSABasicBlock') -> None:
-        super().__init__(MethodDispatch(args, offset), parent_block)
-        self.target = target
+        super().__init__(MethodDispatch(target, args, offset), parent_block)
+        self.target: SSAFunction = target
 
     def __repr__(self) -> str:
         rv: str = ''
