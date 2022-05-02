@@ -30,6 +30,7 @@ def main(argv: Sequence[str] = tuple(sys.argv)) -> None:  # run me with python3,
                         help='log output verbosity (None,  Critical, Error, Warning, Info, Debug)')
     parser.add_argument('--supplemental_cfg_file', type=argparse.FileType('rb'), default=None, help='optional cfg file')
     parser.add_argument('--stdout_to', type=argparse.FileType('wt'), default=None, help='redirect stdout to file')
+    parser.add_argument('--ignore_hashes', action='store_true', help='ignore the predefined function hashes')
     args = parser.parse_args(argv[1:])
 
     if args.input is None:
@@ -53,7 +54,7 @@ def main(argv: Sequence[str] = tuple(sys.argv)) -> None:  # run me with python3,
     logger.info(f"Rattle running on input: {args.input.name}")
 
     ssa = rattle.Recover(args.input.read(), edges=edges, optimize=args.optimize,
-                         split_functions=args.no_split_functions)
+                         split_functions=args.no_split_functions, use_hashes=not args.ignore_hashes)
 
     print(ssa)
 

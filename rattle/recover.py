@@ -17,13 +17,20 @@ class InternalRecover(object):
     edges: List[Tuple[int, int]]
     insns: Dict[int, EVMAsm.EVMInstruction]
 
-    def __init__(self, filedata: bytes, edges: List[Tuple[int, int]], optimize=False, split_functions=True) -> None:
+    def __init__(self, filedata: bytes, edges: List[Tuple[int, int]], optimize=False, split_functions=True,
+                 use_hashes=True) -> None:
         logger.debug(f'{len(filedata)} bytes of input data')
+
+        if use_hashes:          # load hashes from ./hashes.py if requested
+            from .hashes import hashes
+            self.hashes = hashes
+        else:
+            self.hashes = {}
 
         # Remove swarm hash if its there
         self.filedata = self.remove_metadata(filedata)
 
-        dispatch = SSAFunction(0)
+        dispatch = SSAFunction(0, "_dispatch")
         self.functions = [dispatch, ]
         self.edges = edges
 
@@ -398,7 +405,7 @@ class InternalRecover(object):
                         if method is None:
                             continue
 
-                        method.name = ''
+                        method.name = self.hashes.get(hash, '')
                         method.hash = hash
 
                         self.functions.append(method)
@@ -747,8 +754,9 @@ class InternalRecover(object):
 class Recover(object):
     internal: InternalRecover
 
-    def __init__(self, filedata: bytes, edges: List[Tuple[int, int]], optimize=False, split_functions=True) -> None:
-        self.internal = InternalRecover(filedata, edges, optimize, split_functions)
+    def __init__(self, filedata: bytes, edges: List[Tuple[int, int]], optimize=False, split_functions=True,
+                 use_hashes=True) -> None:
+        self.internal = InternalRecover(filedata, edges, optimize, split_functions, use_hashes=use_hashes)
 
     @property
     def functions(self) -> List[SSAFunction]:

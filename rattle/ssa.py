@@ -6,7 +6,6 @@ import logging
 from typing import List, Dict, Tuple, Optional, Set, cast, Iterator, Callable, Iterable
 
 from rattle.evmasm import EVMAsm
-from .hashes import hashes
 
 logger = logging.getLogger(__name__)
 
@@ -543,7 +542,7 @@ class SSAFunction(object):
 
     num_values: int = 0
 
-    def __init__(self, offset: int, name: str = "_dispatch", hash: int = 0) -> None:
+    def __init__(self, offset: int, name: str = '', hash: int = 0) -> None:
         self.name = name
         self.hash = hash
         self.offset = offset
@@ -574,8 +573,6 @@ class SSAFunction(object):
     @hash.setter
     def hash(self, v: int) -> None:
         self._hash = v
-        if v != 0:
-            self.name = hashes.get(v, '')
 
     def desc(self) -> str:
         name = self.name
