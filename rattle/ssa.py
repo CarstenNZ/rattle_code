@@ -411,6 +411,9 @@ class SSAInstruction(object):
     def add_comment(self, comment: str) -> None:
         self.comment = comment
 
+    def print(self, prefix=''):
+        return prefix + repr(self)
+
 
 class SSABasicBlock(object):
     function: 'SSAFunction'
@@ -473,6 +476,13 @@ class SSABasicBlock(object):
     def __len__(self) -> int:
         return len(self.insns)
 
+    @property
+    def out_edges(self) -> List['SSABasicBlock']:
+        """ returns list with all out edges, i.e. fallthrough followed by jump destinations
+        """
+        return ([self.fallthrough_edge] if self.fallthrough_edge else []) \
+               + sorted(self.jump_edges, key=lambda b: b.offset)
+
     def stack_pop(self) -> StackValue:
         return self.stack.pop()
 
@@ -498,6 +508,7 @@ class SSABasicBlock(object):
 
         return before_len != len(self.jump_edges)
 
+    # TODO, only use is commented, useful ?
     def invalid_jumpdest(self, offset: int) -> 'SSABasicBlock':
         new_block = SSABasicBlock(offset, self.function)
         insn = EVMAsm.disassemble_one('\xfe', offset)
@@ -530,6 +541,13 @@ class SSABasicBlock(object):
 
             if pre_count == len(self.insns):
                 break
+
+    def print(self, prefix='', no_instr=False):
+        in_edges = ', '.join(hex(b.offset) for b in self.in_edges)
+        out_edges = ', '.join(hex(b.offset) for b in self.out_edges)
+        instr = "" if no_instr else "\n".join(i.print(prefix=f'{prefix}\t{i.offset:#x}: ') for i in self.insns)
+        return f"{prefix}BasicBlock {self.offset:#x}, in: {in_edges or '<start>'}, out: {out_edges or '<end>'}\n{instr}"
+
 
 
 class SSAFunction(object):
@@ -774,6 +792,10 @@ class SSAFunction(object):
             end = start
 
         return sorted(list(args), key=lambda x: x[0])
+
+    def print(self):
+        bbs = "\n\n".join(bb.print(prefix='\t') for bb in self)
+        return f"Function {self.offset:#x}\n{bbs}\n\nFunction {self.offset:#x} end\n"
 
 
 class InternalCall(SSAInstruction):
