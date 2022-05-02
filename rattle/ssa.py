@@ -531,6 +531,7 @@ class SSAFunction(object):
         self.name: str = name
         self._hash: int = hash
         self.offset: int = offset
+        self.num_values: int = 0
 
         self.blocks: List[SSABasicBlock] = []
         self.blockmap: Dict[int, SSABasicBlock] = {}

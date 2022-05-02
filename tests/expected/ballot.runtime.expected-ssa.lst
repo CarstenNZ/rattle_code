@@ -11,19 +11,19 @@
 	<0x2f: %9 = DIV(%7, #100000000000000000000000000000000000000000000000000000000)>
 	<0x35: %11 = AND(#ffffffff, %9)>
 	<0x3c: %13 = EQ(#5c19a95c, %11)>
-	<0x0: ICONDCALL(delegate(address), %13)>
+	<0x40: ICONDCALL(delegate(address), %13)>
 ] fallthrough:0x41 jumps:None>
 <SSABasicBlock offset:0x41 num_insns:2 in: [0xd] insns:[
 	<0x47: %16 = EQ(#609ff1bd, %11)>
-	<0x0: ICONDCALL(winningProposal(), %16)>
+	<0x4b: ICONDCALL(winningProposal(), %16)>
 ] fallthrough:0x4c jumps:None>
 <SSABasicBlock offset:0x4c num_insns:2 in: [0x41] insns:[
 	<0x52: %19 = EQ(#9e7b8d61, %11)>
-	<0x0: ICONDCALL(giveRightToVote(address), %19)>
+	<0x56: ICONDCALL(giveRightToVote(address), %19)>
 ] fallthrough:0x57 jumps:None>
 <SSABasicBlock offset:0x57 num_insns:2 in: [0x4c] insns:[
 	<0x5d: %22 = EQ(#b3f98adc, %11)>
-	<0x0: ICONDCALL(vote(uint8), %22)>
+	<0x61: ICONDCALL(vote(uint8), %22)>
 ] fallthrough:0x62 jumps:None>
 <SSABasicBlock offset:0x62 num_insns:1 in: [0x0,0x57] insns:[
 	<0x66: REVERT(#0, #0)>

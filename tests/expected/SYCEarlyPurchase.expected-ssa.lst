@@ -9,63 +9,63 @@
 	<0x2d: %8 = DIV(%6, #100000000000000000000000000000000000000000000000000000000)>
 	<0x33: %10 = AND(#ffffffff, %8)>
 	<0x3a: %12 = EQ(#2288fad6, %10)>
-	<0x0: ICONDCALL(earlyPurchases(uint256), %12)>
+	<0x3e: ICONDCALL(earlyPurchases(uint256), %12)>
 ] fallthrough:0x3f jumps:None>
 <SSABasicBlock offset:0x3f num_insns:2 in: [0xb] insns:[
 	<0x45: %15 = EQ(#25bae118, %10)>
-	<0x0: ICONDCALL(earlyPurchaseClosedAt(), %15)>
+	<0x49: ICONDCALL(earlyPurchaseClosedAt(), %15)>
 ] fallthrough:0x4a jumps:None>
 <SSABasicBlock offset:0x4a num_insns:2 in: [0x3f] insns:[
 	<0x50: %18 = EQ(#2ad45312, %10)>
-	<0x0: ICONDCALL(WEI_MINIMUM_PURCHASE(), %18)>
+	<0x54: ICONDCALL(WEI_MINIMUM_PURCHASE(), %18)>
 ] fallthrough:0x55 jumps:None>
 <SSABasicBlock offset:0x55 num_insns:2 in: [0x4a] insns:[
 	<0x5b: %21 = EQ(#2e1a7d4d, %10)>
-	<0x0: ICONDCALL(withdraw(uint256), %21)>
+	<0x5f: ICONDCALL(withdraw(uint256), %21)>
 ] fallthrough:0x60 jumps:None>
 <SSABasicBlock offset:0x60 num_insns:2 in: [0x55] insns:[
 	<0x66: %24 = EQ(#3f5174df, %10)>
-	<0x0: ICONDCALL(numberOfEarlyPurchases(), %24)>
+	<0x6a: ICONDCALL(numberOfEarlyPurchases(), %24)>
 ] fallthrough:0x6b jumps:None>
 <SSABasicBlock offset:0x6b num_insns:2 in: [0x60] insns:[
 	<0x71: %27 = EQ(#5aa3d2b0, %10)>
-	<0x0: ICONDCALL(purchasedAmountBy(address), %27)>
+	<0x75: ICONDCALL(purchasedAmountBy(address), %27)>
 ] fallthrough:0x76 jumps:None>
 <SSABasicBlock offset:0x76 num_insns:2 in: [0x6b] insns:[
 	<0x7c: %30 = EQ(#66d38203, %10)>
-	<0x0: ICONDCALL(setup(address), %30)>
+	<0x80: ICONDCALL(setup(address), %30)>
 ] fallthrough:0x81 jumps:None>
 <SSABasicBlock offset:0x81 num_insns:2 in: [0x76] insns:[
 	<0x87: %33 = EQ(#853828b6, %10)>
-	<0x0: ICONDCALL(withdrawAll(), %33)>
+	<0x8b: ICONDCALL(withdrawAll(), %33)>
 ] fallthrough:0x8c jumps:None>
 <SSABasicBlock offset:0x8c num_insns:2 in: [0x81] insns:[
 	<0x92: %36 = EQ(#8710296f, %10)>
-	<0x0: ICONDCALL(totalEarlyPurchaseRaised(), %36)>
+	<0x96: ICONDCALL(totalEarlyPurchaseRaised(), %36)>
 ] fallthrough:0x97 jumps:None>
 <SSABasicBlock offset:0x97 num_insns:2 in: [0x8c] insns:[
 	<0x9d: %39 = EQ(#8da5cb5b, %10)>
-	<0x0: ICONDCALL(owner(), %39)>
+	<0xa1: ICONDCALL(owner(), %39)>
 ] fallthrough:0xa2 jumps:None>
 <SSABasicBlock offset:0xa2 num_insns:2 in: [0x97] insns:[
 	<0xa8: %42 = EQ(#9558abde, %10)>
-	<0x0: ICONDCALL(sycCrowdsale(), %42)>
+	<0xac: ICONDCALL(sycCrowdsale(), %42)>
 ] fallthrough:0xad jumps:None>
 <SSABasicBlock offset:0xad num_insns:2 in: [0xa2] insns:[
 	<0xb3: %45 = EQ(#ae4cc757, %10)>
-	<0x0: ICONDCALL(closeEarlyPurchase(), %45)>
+	<0xb7: ICONDCALL(closeEarlyPurchase(), %45)>
 ] fallthrough:0xb8 jumps:None>
 <SSABasicBlock offset:0xb8 num_insns:2 in: [0xad] insns:[
 	<0xbe: %48 = EQ(#f0e02bd6, %10)>
-	<0x0: ICONDCALL(WEI_MAXIMUM_EARLYPURCHASE(), %48)>
+	<0xc2: ICONDCALL(WEI_MAXIMUM_EARLYPURCHASE(), %48)>
 ] fallthrough:0xc3 jumps:None>
 <SSABasicBlock offset:0xc3 num_insns:2 in: [0xb8] insns:[
 	<0xc9: %51 = EQ(#f2fde38b, %10)>
-	<0x0: ICONDCALL(transferOwnership(address), %51)>
+	<0xcd: ICONDCALL(transferOwnership(address), %51)>
 ] fallthrough:0xce jumps:None>
 <SSABasicBlock offset:0xce num_insns:2 in: [0xc3] insns:[
 	<0xd4: %54 = EQ(#f974a1a2, %10)>
-	<0x0: ICONDCALL(PURCHASE_AMOUNT_UNIT(), %54)>
+	<0xd8: ICONDCALL(PURCHASE_AMOUNT_UNIT(), %54)>
 ] fallthrough:0xda jumps:None>
 <SSABasicBlock offset:0xda num_insns:4 in: [0x0,0xce] insns:[
 	<0xe5: %57 = CALLVALUE()>
@@ -1031,15 +1031,15 @@ Function PURCHASE_AMOUNT_UNIT() storage:
 			To:	%65 = CALLER()    // ADDRESS
 			Value:	%357 = SUB(%356, #17b7883c06916600000)
 
-	- withdraw(uint256)
-		%565 = CALL(%558, %548, %126, %563, %564, %563, #0)
-			To:	%548 = SLOAD(#0)    // ADDRESS
-			Value:	%126 = CALLDATALOAD(#4)
-
 	- withdrawAll()
 		%709 = CALL(%702, %688, %700, %707, %708, %707, #0)
 			To:	%688 = SLOAD(#0)    // ADDRESS
 			Value:	%700 = BALANCE(%699)
+
+	- withdraw(uint256)
+		%565 = CALL(%558, %548, %126, %563, %564, %563, #0)
+			To:	%548 = SLOAD(#0)    // ADDRESS
+			Value:	%126 = CALLDATALOAD(#4)
 
 [+] Contract calls:
 	%366 = CALL(%359, %65, %357, %364, %365, %364, #0)
@@ -1051,15 +1051,6 @@ Function PURCHASE_AMOUNT_UNIT() storage:
 		Out Data Offset: %364		%364 = MLOAD(#40)
 		Out Data Size: #0
 
-	%565 = CALL(%558, %548, %126, %563, %564, %563, #0)
-		Gas: %558			%558 = MUL(%557, #8fc)
-		To: %548 			%548 = SLOAD(#0)    // ADDRESS
-		Value: %126			%126 = CALLDATALOAD(#4)
-		In Data Offset: %563		%563 = MLOAD(#40)
-		In Data Size: %564		%564 = SUB(%560, %563)
-		Out Data Offset: %563		%563 = MLOAD(#40)
-		Out Data Size: #0
-
 	%709 = CALL(%702, %688, %700, %707, %708, %707, #0)
 		Gas: %702			%702 = MUL(%701, #8fc)
 		To: %688 			%688 = SLOAD(#0)    // ADDRESS
@@ -1067,6 +1058,15 @@ Function PURCHASE_AMOUNT_UNIT() storage:
 		In Data Offset: %707		%707 = MLOAD(#40)
 		In Data Size: %708		%708 = SUB(%704, %707)
 		Out Data Offset: %707		%707 = MLOAD(#40)
+		Out Data Size: #0
+
+	%565 = CALL(%558, %548, %126, %563, %564, %563, #0)
+		Gas: %558			%558 = MUL(%557, #8fc)
+		To: %548 			%548 = SLOAD(#0)    // ADDRESS
+		Value: %126			%126 = CALLDATALOAD(#4)
+		In Data Offset: %563		%563 = MLOAD(#40)
+		In Data Size: %564		%564 = SUB(%560, %563)
+		Out Data Offset: %563		%563 = MLOAD(#40)
 		Out Data Size: #0
 
 [+] Wrote _dispatch to output/_dispatch.png

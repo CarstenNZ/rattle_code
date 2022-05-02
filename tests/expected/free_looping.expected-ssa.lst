@@ -21,7 +21,7 @@
 	<0x1a: %11 = CALLDATALOAD(#0)>
 	<0x1d: %13 = SHR(#e0, %11)>
 	<0x24: %15 = EQ(#4cd13d28, %13)>
-	<0x0: ICONDCALL(_unknown_0x4cd13d28(), %15)>
+	<0x27: ICONDCALL(_unknown_0x4cd13d28(), %15)>
 ] fallthrough:0x28 jumps:None>
 <SSABasicBlock offset:0x28 num_insns:1 in: [0xf,0x18] insns:[
 	<0x2c: REVERT(#0, #0)>

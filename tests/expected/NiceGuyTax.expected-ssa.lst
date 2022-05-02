@@ -9,27 +9,27 @@
 	<0x2d: %8 = DIV(%6, #100000000000000000000000000000000000000000000000000000000)>
 	<0x33: %10 = AND(#ffffffff, %8)>
 	<0x3a: %12 = EQ(#1fc06f0d, %10)>
-	<0x0: ICONDCALL(niceGuys(uint256), %12)>
+	<0x3e: ICONDCALL(niceGuys(uint256), %12)>
 ] fallthrough:0x3f jumps:None>
 <SSABasicBlock offset:0x3f num_insns:2 in: [0xb] insns:[
 	<0x45: %15 = EQ(#2df05a3e, %10)>
-	<0x0: ICONDCALL(payoutIndex(), %15)>
+	<0x49: ICONDCALL(payoutIndex(), %15)>
 ] fallthrough:0x4a jumps:None>
 <SSABasicBlock offset:0x4a num_insns:2 in: [0x3f] insns:[
 	<0x50: %18 = EQ(#392c6238, %10)>
-	<0x0: ICONDCALL(currentNiceGuyIndex(), %18)>
+	<0x54: ICONDCALL(currentNiceGuyIndex(), %18)>
 ] fallthrough:0x55 jumps:None>
 <SSABasicBlock offset:0x55 num_insns:2 in: [0x4a] insns:[
 	<0x5b: %21 = EQ(#3feb5f2b, %10)>
-	<0x0: ICONDCALL(investors(uint256), %21)>
+	<0x5f: ICONDCALL(investors(uint256), %21)>
 ] fallthrough:0x60 jumps:None>
 <SSABasicBlock offset:0x60 num_insns:2 in: [0x55] insns:[
 	<0x66: %24 = EQ(#d377dedd, %10)>
-	<0x0: ICONDCALL(currentNiceGuy(), %24)>
+	<0x6a: ICONDCALL(currentNiceGuy(), %24)>
 ] fallthrough:0x6b jumps:None>
 <SSABasicBlock offset:0x6b num_insns:2 in: [0x60] insns:[
 	<0x71: %27 = EQ(#e23e3229, %10)>
-	<0x0: ICONDCALL(investorIndex(), %27)>
+	<0x75: ICONDCALL(investorIndex(), %27)>
 ] fallthrough:0x76 jumps:None>
 <SSABasicBlock offset:0x76 num_insns:3 in: [0x0,0x6b] insns:[
 	<0x77: %29 = CALLVALUE()>
