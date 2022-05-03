@@ -1,12 +1,30 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import subprocess
+import tempfile
+from abc import ABC, abstractmethod
 
 from .recover import *
 
 logger = logging.getLogger(__name__)
 
 
-class UseDefGraph(object):
+class GraphBase(ABC):
+    def gen_png(self, out_file: Path):
+        """ generate graph png and write to out_file
+        """
+        t = tempfile.NamedTemporaryFile(suffix='.dot', mode='w')
+        t.write(self.dot())
+        t.flush()
+
+        subprocess.call(['dot', '-Tpng', f'-o{out_file}', t.name])
+
+    @abstractmethod
+    def dot(self) -> str:
+        pass
+
+
+class UseDefGraph(GraphBase):
     def __init__(self, value: StackValue) -> None:
         self.value = value
 
@@ -48,7 +66,7 @@ class UseDefGraph(object):
         return rv
 
 
-class DefUseGraph(object):
+class DefUseGraph(GraphBase):
     def __init__(self, value: StackValue) -> None:
         self.value = value
 
@@ -92,7 +110,7 @@ class DefUseGraph(object):
         return rv
 
 
-class ControlFlowGraph(object):
+class ControlFlowGraph(GraphBase):
     def __init__(self, function: SSAFunction) -> None:
         self.function = function
 
@@ -104,13 +122,13 @@ class ControlFlowGraph(object):
         rv += 'edge [fontname = "consolas"];\n'
 
         name = self.function.desc()
-        hash = f'Hash: {self.function.hash:#x}'
+        hash_ = f'Hash: {self.function.hash:#x}'
         offset = f'Start: {self.function.offset:#x}'
         arguments = f'Arguments: {self.function.arguments()}'
         storage = f'Storage: {self.function.storage}'
         # memory = f'Memory: {self.function.memory}'
 
-        function_desc = [name, hash, offset, arguments, storage]
+        function_desc = [name, hash_, offset, arguments, storage]
 
         rv += f'ff [label="{{' + '\\l'.join(function_desc) + '\\l}}", shape="record" ];'
 
