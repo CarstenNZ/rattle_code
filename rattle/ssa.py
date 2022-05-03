@@ -3,6 +3,7 @@
 
 import functools
 import logging
+from enum import Enum
 from typing import List, Dict, Tuple, Optional, Set, cast, Iterator, Callable, Iterable
 
 from rattle.evmasm import EVMAsm
@@ -396,25 +397,32 @@ class SSAInstruction(object):
         return prefix + repr(self)
 
 
+class BlockAttrib(Enum):
+    FuncStart = 'fStart'  # callee, the single entry block
+    FuncEnd   = 'fEnd'    # callee, a return block
+    # Caller    = 'ca'  # caller, a block that calls a function
+    # ReturnTo  = 'rt'  # caller, the block the callee returns to
+
 class SSABasicBlock(object):
-    def __init__(self, offset: int, function: 'SSAFunction') -> None:
+    def __init__(self, offset: int, function: 'SSAFunction', attribs: Optional[Set[BlockAttrib]] = None ) -> None:
         self.offset:int = offset
         self.end: int = offset
         self.function: 'SSAFunction' = function
         self.function.add_block(self)
 
         self.in_edges: Set = set()
-        self.fallthrough_edge: Optional['SSABasicBlock'] = None
+        self.fallthrough_edge: Optional['SSABasicBlock'] = None     # TODO, remove fallthrough, it only helps bad assumptions
         self.jump_edges: Set['SSABasicBlock'] = set()
 
         self.insns = []
         self.stack: List[StackValue] = [PlaceholderStackValue(-x, self) for x in range(32, 0, -1)]
+        self.stack_delta = 0
+
+        self.attribs: Optional[Set[BlockAttrib]] = attribs
 
     def __repr__(self) -> str:
-        insns = []
-        for i in self.insns:
-            insns.append(f"\t<{i.offset:#x}: {i}>")
-        insn_str = '\n'.join(insns)
+        insn_str = '\n'.join(f"\t<{i.offset:#x}: {i}>" for i in self.insns)
+
         if len(self.insns) > 0:
             insn_str = '\n' + insn_str + '\n'
 
@@ -453,10 +461,21 @@ class SSABasicBlock(object):
         return ([self.fallthrough_edge] if self.fallthrough_edge else []) \
                + sorted(self.jump_edges, key=lambda b: b.offset)
 
+    def add_attrib(self, attrib: BlockAttrib):
+        if self.attribs is None:
+            self.attribs = set()
+
+        self.attribs.add(attrib)
+
+    def has_attrib(self, attrib: BlockAttrib) -> bool:
+        return self.attribs is not None and attrib in self.attribs
+
     def stack_pop(self) -> StackValue:
+        self.stack_delta -= 1
         return self.stack.pop()
 
     def stack_push(self, item: StackValue) -> None:
+        self.stack_delta += 1
         self.stack.append(item)
 
     def add_jump_target(self, offset: int) -> bool:
@@ -498,6 +517,7 @@ class SSABasicBlock(object):
     def clear(self) -> None:
         self.insns = []
         self.stack = [PlaceholderStackValue(-x, self) for x in range(32, 0, -1)]
+        self.stack_delta = 0
 
     def canonicalize(self) -> None:
 
@@ -513,10 +533,11 @@ class SSABasicBlock(object):
                 break
 
     def print(self, prefix='', no_instr=False):
-        in_edges = ', '.join(f"<{b.offset:x}" for b in self.in_edges)
-        out_edges = ', '.join(f">{b.offset:x}" for b in self.out_edges)
+        in_edges = ' '.join(f"<{b.offset:x}" for b in self.in_edges)
+        out_edges = ' '.join(f">{b.offset:x}" for b in self.out_edges)
+        attribs   = '' if self.attribs is None else (', ' + ', '.join(a.value for a in self.attribs))
         instr = "" if no_instr else "\n".join(i.print(prefix=f'{prefix}\t{i.offset:x}: ') for i in self.insns)
-        return f"{prefix}BasicBlock {self.offset:x}, {in_edges} | {out_edges}\n{instr}"
+        return f"{prefix}BasicBlock {self.offset:x}, stack {self.stack_delta}, {in_edges}, {out_edges}{attribs}\n{instr}"
 
 
 
