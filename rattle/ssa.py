@@ -12,10 +12,6 @@ logger = logging.getLogger(__name__)
 concrete_values: List['ConcreteStackValue'] = []
 
 
-class NewEdgeException(Exception):
-    pass
-
-
 class PHIRemovalException(Exception):
     pass
 

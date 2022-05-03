@@ -103,14 +103,14 @@ class InternalRecover(object):
             except:
                 pass
 
-        while True:
-            try:
-                self.recover_loop(function)
-                break
-            except NewEdgeException as e:
-                continue
+        while self.recover_loop(function):
+            pass
 
-    def recover_loop(self, function: SSAFunction) -> None:
+    def recover_loop(self, function: SSAFunction) -> bool:
+        """ recover given function: block build/analyse, edge discover and phi insertion
+            - returns True if new edges or functions are discorvered
+        """
+
         function.clear()
         self.repopulate_blocks(function)
 
@@ -155,12 +155,14 @@ class InternalRecover(object):
                     block.stack_push(insn.return_value)
 
         if self.resolve_xrefs(function):
-            raise NewEdgeException()
+            return True
 
         self.resolve_phis(function)
 
         if self.resolve_xrefs(function):
-            raise NewEdgeException()
+            return True
+
+        return False
 
     def identify_blocks(self, function: SSAFunction) -> None:
         # Initial function that identifies and populate blocks
