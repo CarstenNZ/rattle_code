@@ -28,7 +28,7 @@ class UseDefGraph(GraphBase):
     def __init__(self, value: StackValue) -> None:
         self.value = value
 
-    def dot(self) -> None:
+    def dot(self) -> str:
         rv = ''
         rv += 'digraph G {\n'
 
@@ -41,6 +41,8 @@ class UseDefGraph(GraphBase):
 
         rv += '\n'.join(list(set(es)))
         rv += '\n}'
+
+        return rv
 
     def edges(self, value) -> List[str]:
         rv = []
