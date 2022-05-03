@@ -1,0 +1,95 @@
+000: check CALLDATASIZE >= 4
+    <- program entry
+    -> 00d, 062
+
+00c: check for function 0x37354a68 (luckyNumberOfAddress)
+    <- 000
+    -> 0d7, 041
+
+041: check for function 0x41c0e1b5 (kill)
+    <- 00c
+    -> 12e
+
+04c: check for function 0x80ca7aec (forceReseed)
+    <- 041
+    -> 145, 057
+
+057: check for function 0xd11711a2 (participate)
+    <- 04c
+    -> 15c, 062
+
+### default function
+
+062: default function entry, test for 0.1 eth
+    <- 000, 057
+    -> 075, 0c7
+
+075: default cont, test for owner
+    <- 074
+    -> 0c7
+
+0c7: default cont, checks combined if condition for BBs 062 && 075
+    <- 062, 075
+    -> 0cd (true), 0d5
+
+0cd: default cont, if body calls participate()
+    <- 0c7
+    -> 0d4
+
+0d4: default cont, participate() return
+    <- 0cd
+    -> 0d5
+
+0d5: default function end (stop)
+    <- 0c7, 0d4
+    ->
+
+### luckyNumberOfAddress
+
+0d7: luckyNumberOfAddress entry, checks callvalue for 0
+    <- 00c
+    -> 0df, 0e3
+
+0df: luckyNumberOfAddress, revert
+    <- 0de
+    ->
+
+0e3: luckyNumberOfAddress, calls 321 for calculation
+    <- 0d7
+    -> call 321, return to 118
+
+118: return
+    <- 321/118
+    -> return
+
+### participate, forceReseed, reseed (52e)
+
+...
+
+### _helper, is luckyNumberOfAddress calculation body
+###          called by luckyNumberOfAddress 0e3, return 118
+###          and participate 1dc, return 1e8
+
+321: _helper, calc
+    <- 0e3, 1dc
+    -> 368, 369
+
+368: assert
+    <- 321
+    ->
+
+369:
+    <- 367
+    -> 3b7, 3b8
+
+3b7: assert
+    <- 369
+    ->
+
+3b8: return
+    <- 3b6
+    -> return
+
+
+
+

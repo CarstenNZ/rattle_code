@@ -1,0 +1,101 @@
+label_0000:
+	// Inputs[1] { @0005  msg.value }
+	0000    60  PUSH1 0x80
+	0002    60  PUSH1 0x40
+	0004    52  MSTORE
+	0005    34  CALLVALUE
+	0006    80  DUP1
+	0007    15  ISZERO
+	0008    60  PUSH1 0x0f
+	000A    57  *JUMPI
+	// Stack delta = +1
+	// Outputs[2]
+	// {
+	//     @0004  memory[0x40:0x60] = 0x80
+	//     @0005  stack[0] = msg.value
+	// }
+	// Block ends with conditional jump to 0x000f, if !msg.value
+
+label_000B:
+	// Incoming jump from 0x000A, if not !msg.value
+	// Inputs[1] { @000E  memory[0x00:0x00] }
+	000B    60  PUSH1 0x00
+	000D    80  DUP1
+	000E    FD  *REVERT
+	// Stack delta = +0
+	// Outputs[1] { @000E  revert(memory[0x00:0x00]); }
+	// Block terminates
+
+label_000F:
+	// Incoming jump from 0x000A, if !msg.value
+	000F    5B  JUMPDEST
+	0010    50  POP
+	0011    60  PUSH1 0x16
+	0013    60  PUSH1 0x18
+	0015    56  *JUMP
+	// Stack delta = +0
+	// Outputs[1] { @0011  stack[-1] = 0x16 }
+	// Block ends with call to 0x0018, returns to 0x0016
+
+label_0016:
+	// Incoming return from call to 0x0018 at 0x0015
+	0016    5B  JUMPDEST
+	0017    00  *STOP
+	// Stack delta = +0
+	// Outputs[1] { @0017  stop(); }
+	// Block terminates
+
+label_0018:
+	// Incoming call from 0x0015, returns to 0x0016
+	0018    5B  JUMPDEST
+	0019    60  PUSH1 0x1e
+	001B    60  PUSH1 0x26
+	001D    56  *JUMP
+	// Stack delta = +1
+	// Outputs[1] { @0019  stack[0] = 0x1e }
+	// Block ends with call to 0x0026, returns to 0x001E
+
+label_001E:
+	// Incoming return from call to 0x0026 at 0x001D
+	001E    5B  JUMPDEST
+	001F    60  PUSH1 0x24
+	0021    60  PUSH1 0x28
+	0023    56  *JUMP
+	// Stack delta = +1
+	// Outputs[1] { @001F  stack[0] = 0x24 }
+	// Block ends with call to 0x0028, returns to 0x0024
+
+label_0024:
+	// Incoming return from call to 0x0028 at 0x0023
+	// Inputs[1] { @0025  stack[-1] }
+	0024    5B  JUMPDEST
+	0025    56  *JUMP
+	// Stack delta = -1
+	// Block ends with unconditional jump to stack[-1]
+
+label_0026:
+	// Incoming call from 0x002D, returns to 0x002E
+	// Incoming call from 0x001D, returns to 0x001E
+	// Inputs[1] { @0027  stack[-1] }
+	0026    5B  JUMPDEST
+	0027    56  *JUMP
+	// Stack delta = -1
+	// Block ends with unconditional jump to stack[-1]
+
+label_0028:
+	// Incoming call from 0x0023, returns to 0x0024
+	0028    5B  JUMPDEST
+	0029    60  PUSH1 0x2e
+	002B    60  PUSH1 0x26
+	002D    56  *JUMP
+	// Stack delta = +1
+	// Outputs[1] { @0029  stack[0] = 0x2e }
+	// Block ends with call to 0x0026, returns to 0x002E
+
+label_002E:
+	// Incoming return from call to 0x0026 at 0x002D
+	// Inputs[1] { @002F  stack[-1] }
+	002E    5B  JUMPDEST
+	002F    56  *JUMP
+	// Stack delta = -1
+	// Block ends with unconditional jump to stack[-1]
