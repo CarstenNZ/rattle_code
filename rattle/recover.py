@@ -12,11 +12,6 @@ logger = logging.getLogger(__name__)
 
 
 class InternalRecover(object):
-    filedata: bytes
-    functions: List[SSAFunction]
-    edges: List[Tuple[int, int]]
-    insns: Dict[int, EVMAsm.EVMInstruction]
-
     def __init__(self, filedata: bytes, edges: List[Tuple[int, int]], optimize=False, split_functions=True,
                  use_hashes=True) -> None:
         logger.debug(f'{len(filedata)} bytes of input data')
@@ -31,8 +26,9 @@ class InternalRecover(object):
         self.filedata = self.remove_metadata(filedata)
 
         dispatch = SSAFunction(0, "_dispatch")
-        self.functions = [dispatch, ]
-        self.edges = edges
+        self.functions: List[SSAFunction] = [dispatch]
+        self.edges: List[Tuple[int, int]] = edges
+        self.insns: Dict[int, EVMAsm.EVMInstruction] = {}
 
         self.recover(dispatch)
 
@@ -747,8 +743,6 @@ class InternalRecover(object):
 
 
 class Recover(object):
-    internal: InternalRecover
-
     def __init__(self, filedata: bytes, edges: List[Tuple[int, int]], optimize=False, split_functions=True,
                  use_hashes=True) -> None:
         self.internal = InternalRecover(filedata, edges, optimize, split_functions, use_hashes=use_hashes)
