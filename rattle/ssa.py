@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 import functools
+import json
 import logging
+from abc import abstractmethod, ABC
 from enum import Enum
 from typing import List, Dict, Tuple, Optional, Set, cast, Iterator, Callable, Iterable, Collection
 
@@ -34,11 +36,33 @@ class InternalCallOp(EVMAsm.EVMInstruction):
         super().__init__(0x102, "ICALL", 0, args, 0, 0, "Internal Call", 0, offset)
 
 
-class StackValue(object):
+class SSAElement(ABC):
+    """ adds some shared functionality to all SSA relevant classes
+    """
+
+    def write_json(self, file_path, indent=4):
+        with open(file_path, 'wt') as f:
+            json.dump(self.to_json_dict(), f, indent=indent)
+
+    @abstractmethod
+    def to_json_dict(self) -> Dict:
+        """ returns a json encode-able dict
+        """
+        pass
+
+
+class StackValue(SSAElement):
     def __init__(self, value: int) -> None:
         self.value = value
         self._writer = None
         self._readers = set()
+
+    def to_json_dict(self) -> Dict:
+        """ returns a json encode-able dict
+        """
+        return {
+            'value': self.value
+        }
 
     @property
     def writer(self) -> Optional['SSAInstruction']:
@@ -60,7 +84,7 @@ class StackValue(object):
     def remove_reader(self, insn: 'SSAInstruction') -> None:
         try:
             self._readers.remove(insn)
-        except:
+        except Exception:
             pass
 
     def resolve(self) -> Tuple['StackValue', bool]:
@@ -86,6 +110,14 @@ class ConcreteStackValue(StackValue):
         super().__init__(-1)
 
         concrete_values.append(self)
+
+    def to_json_dict(self) -> Dict:
+        """ returns a json encode-able dict
+        """
+        return {
+            **super().to_json_dict(),
+            'concrete': self.concrete_value
+        }
 
     def __del__(self) -> None:
         concrete_values.remove(self)
@@ -218,7 +250,7 @@ class PlaceholderStackValue(StackValue):
         return self, False
 
 
-class SSAInstruction(object):
+class SSAInstruction(SSAElement):
     def __init__(self, evminsn: EVMAsm.EVMInstruction, parent_block: 'SSABasicBlock') -> None:
         self.insn: EVMAsm.EVMInstruction = evminsn
         self.arguments: List[StackValue] = []
@@ -227,6 +259,25 @@ class SSAInstruction(object):
         self.comment: Optional[str] = None
 
         self._return_value: Optional[StackValue] = None
+
+    def to_json_dict(self) -> Dict:
+        """ returns a json encode-able dict
+        """
+        def fmt_arg(arg):
+            if isinstance(arg, SSAElement):
+                return arg.to_json_dict()
+            return arg
+        # <def
+
+        return {
+            'ofs': self.offset,
+            'instr': self.insn.name,
+            'args': [fmt_arg(a) for a in self.arguments],
+        }
+
+    def clear(self):
+        self.arguments.clear()
+        self._return_value = None
 
     def __repr__(self) -> str:
         def key_for_PHI_arguments(sv: StackValue):
@@ -310,7 +361,7 @@ class SSAInstruction(object):
     def remove_from_parent(self) -> None:
         try:
             self.parent_block.insns.remove(self)
-        except:
+        except Exception:
             pass
 
     def resolve_arguments(self) -> bool:
@@ -387,7 +438,7 @@ class SSAInstruction(object):
         # Remove from parent, but this could be called several times
         try:
             self.remove_from_parent()
-        except:
+        except Exception:
             pass
 
     def add_comment(self, comment: str) -> None:
@@ -403,7 +454,7 @@ class BlockAttrib(Enum):
     Caller    = 'caller'  # caller, a block that calls a function
     ReturnTo  = 'rTo'     # caller, the block the callee returns to
 
-class SSABasicBlock(object):
+class SSABasicBlock(SSAElement):
     def __init__(self, offset: int, function: 'SSAFunction', attribs: Optional[Set[BlockAttrib]] = None ) -> None:
         self.offset:int = offset
         self.end: int = offset
@@ -419,6 +470,20 @@ class SSABasicBlock(object):
         self.stack_delta = 0
 
         self.attribs: Optional[Set[BlockAttrib]] = attribs
+
+    def to_json_dict(self) -> Dict:
+        """ returns a json encode-able dict
+        """
+        return {
+            'func': self.function.name,
+            'ofs': self.offset,
+            'end': self.end,
+            'instrs': [i.to_json_dict() for i in self],
+            'in': sorted(b.offset for b in self.in_edges),
+            'out': sorted(b.offset for b in self.out_edges),
+            'stack_delta': self.stack_delta,
+            'attribs': None if self.attribs is None else ", ".join(sorted(a.value for a in self.attribs)),
+        }
 
     def __repr__(self) -> str:
         insn_str = '\n'.join(f"\t<{i.offset:#x}: {i}>" for i in self.insns)
@@ -546,7 +611,7 @@ class SSABasicBlock(object):
 
 
 
-class SSAFunction(object):
+class SSAFunction(SSAElement):
     def __init__(self, offset: int, name: str = '', hash: int = 0) -> None:
         self.name: str = name
         self._hash: int = hash
@@ -557,6 +622,16 @@ class SSAFunction(object):
         self.blockmap: Dict[int, SSABasicBlock] = {}
 
         self.phis: Dict[StackValue, SSAInstruction] = {}
+
+    def to_json_dict(self) -> Dict:
+        """ returns a json encode-able dict
+        """
+        return {
+            'name': self.name,
+            'ofs': self.offset,
+            'blocks': [b.to_json_dict() for b in self.blocks],
+            'phis_count': len(self.phis), # {k.to_json_dict(): v.to_json_dict() for k, j in self.phis}
+        }
 
     def __repr__(self) -> str:
         blocks = '\n'.join([f'{x}' for x in self.blocks])
