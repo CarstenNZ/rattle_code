@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-
+import copy
 import functools
 import json
 import logging
@@ -266,7 +266,7 @@ class SSAInstruction(SSAElement):
     def __init__(self, evminsn: EVMAsm.EVMInstruction, parent_block: 'SSABasicBlock') -> None:
         self.insn: EVMAsm.EVMInstruction = evminsn
         self.arguments: List[StackValue] = []
-        self.offset: int = evminsn.pc
+        self.offset: int = evminsn.pc                       # CLEANUP, make property, never changes
         self.parent_block: SSABasicBlock = parent_block
         self.comment: Optional[str] = None
 
@@ -286,11 +286,6 @@ class SSAInstruction(SSAElement):
             'instr': self.insn.name,
             'args': [fmt_arg(a) for a in self.arguments],
         }
-
-    def reset(self) -> 'SSAInstruction':
-        self.clear_arguments()
-        self._return_value = None
-        return self
 
     def __repr__(self) -> str:
         def key_for_PHI_arguments(sv: StackValue):
@@ -371,7 +366,7 @@ class SSAInstruction(SSAElement):
         if v is not None:
             v.writer = self
 
-    def remove_from_parent(self) -> None:
+    def remove_from_parent(self) -> None:       # CLEANUP, the calls should be comve via the block, e.g block.remove_instr(x)
         try:
             self.parent_block.insns.remove(self)
         except Exception:
@@ -475,14 +470,34 @@ class SSABasicBlock(SSAElement):
         self.function.add_block(self)
 
         self.in_edges: Set = set()
-        self.fallthrough_edge: Optional['SSABasicBlock'] = None     # TODO, remove fallthrough, it only helps bad assumptions
+        self.fallthrough_edge: Optional['SSABasicBlock'] = None     # CLEANUP, remove fallthrough, it only helps bad assumptions
         self.jump_edges: Set['SSABasicBlock'] = set()
 
         self.insns = []
+
+        # CLEANUP, move stack into InternalRecover.simplify_blocks, no need to keep it?
         self.stack: List[StackValue] = [PlaceholderStackValue(-x, self) for x in range(32, 0, -1)]
         self.stack_delta = 0
 
         self.attribs: Optional[Set[BlockAttrib]] = attribs
+
+        # initial state vars, used for block reset during recover
+        self._initial_insns = None
+
+    def save_initial_state(self):
+        self._initial_insns = [copy.copy(i) for i in self.insns]
+
+    def reset_to_initial_state(self, clear_edges: bool) -> None:
+        # self.stack = [PlaceholderStackValue(-x, self) for x in range(32, 0, -1)]
+        # self.stack_delta = 0
+
+        # remove phis, clear remaining instructions
+        self.insns = [copy.copy(i) for i in self._initial_insns]
+
+        if clear_edges:
+            self.in_edges.clear()
+            self.fallthrough_edge = None
+            self.out_edges.clear()
 
     def to_json_dict(self) -> Dict:
         """ returns a json encode-able dict
@@ -592,18 +607,6 @@ class SSABasicBlock(SSAElement):
         self.fallthrough_edge = target_block
         target_block.in_edges.add(self)
 
-    def reset(self, clear_edges: bool) -> None:
-        self.stack = [PlaceholderStackValue(-x, self) for x in range(32, 0, -1)]
-        self.stack_delta = 0
-
-        # remove phis, clear remaining instructions
-        self.insns = [i.reset() for i in self.insns if not isinstance(i.insn, PHIInstruction)]
-
-        if clear_edges:
-            self.in_edges.clear()
-            self.fallthrough_edge = None
-            self.out_edges.clear()
-
     def canonicalize(self) -> None:
 
         while True:
@@ -694,7 +697,7 @@ class SSAFunction(SSAElement):
 
     def reset(self, clear_edges: bool) -> None:
         for block in self.blocks:
-            block.reset(clear_edges)
+            block.reset_to_initial_state(clear_edges)
 
         self.phis = {}
         self.num_values = 0

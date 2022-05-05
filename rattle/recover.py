@@ -95,8 +95,13 @@ class InternalRecover(object):
         return bytecode[0:metadata_start].encode()
 
     def recover(self, dispatch_function: SSAFunction) -> None:
+        # 1) bring BBs to their initial, unconnected state and save this state
+        # - instructions, stack_delta, assignments, ... never change
         self.identify_blocks(dispatch_function)
+        self.simplify_blocks(dispatch_function)
+        [b.save_initial_state() for b in dispatch_function]
 
+        # CLEANUP, remove, don't see the use case
         # If we have supplied edges, set them
         for start, end in self.edges:
             try:
@@ -105,13 +110,13 @@ class InternalRecover(object):
             except:
                 pass
 
-        # 1) recover the whole program as a single function
-        for _runs in count(1):
+        # 2) recover the whole program as a single function
+        for _run_nbr in count(1):
             dispatch_function.reset(clear_edges=False)
             if not self.recover_loop(dispatch_function):
                 break
 
-        # 2) separate the internal functions
+        # 3) separate the internal functions
         internal_funcs = InternalFuncRecover(dispatch_function).split_off()
         self.functions.extend(internal_funcs)
 
@@ -166,6 +171,20 @@ class InternalRecover(object):
             - returns True if new edges are discovered
         """
 
+        if self.resolve_xrefs(function):
+            return True
+
+        self.resolve_phis(function)
+
+        if self.resolve_xrefs(function):
+            return True
+
+        return False
+
+
+    def simplify_blocks(self, function):
+        """ simplifies block by executing the stack actions
+        """
         for block in function:
             for insn in list(block.insns):  # make a new list because we modify it during iterating
 
@@ -206,15 +225,6 @@ class InternalRecover(object):
                     insn.return_value = function.new_placeholder_value()
                     block.stack_push(insn.return_value)
 
-        if self.resolve_xrefs(function):
-            return True
-
-        self.resolve_phis(function)
-
-        if self.resolve_xrefs(function):
-            return True
-
-        return False
 
     def identify_blocks(self, function: SSAFunction) -> None:
         # Initial function that identifies and populate blocks
