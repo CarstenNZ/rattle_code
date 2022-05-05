@@ -4,6 +4,7 @@
 import functools
 import json
 import logging
+import sys
 from abc import abstractmethod, ABC
 from enum import Enum
 from typing import List, Dict, Tuple, Optional, Set, cast, Iterator, Callable, Iterable, Collection
@@ -39,6 +40,17 @@ class InternalCallOp(EVMAsm.EVMInstruction):
 class SSAElement(ABC):
     """ adds some shared functionality to all SSA relevant classes
     """
+
+    def print(self, file=None):
+        """ print pretty represenation to stdout or given file s
+        """
+        if file is None:
+            file = sys.stdout
+
+        print(self.get_print_str(), file=file)
+
+    def get_print_str(self):
+        return f"<missing {self.__class__.__name__}.get_print_str() method!>"
 
     def write_json(self, file_path, indent=4):
         with open(file_path, 'wt') as f:
@@ -445,7 +457,7 @@ class SSAInstruction(SSAElement):
     def add_comment(self, comment: str) -> None:
         self.comment = comment
 
-    def print(self, prefix=''):
+    def get_print_str(self, prefix=''):
         return prefix + repr(self)
 
 
@@ -605,11 +617,11 @@ class SSABasicBlock(SSAElement):
             if pre_count == len(self.insns):
                 break
 
-    def print(self, prefix='', no_instr=False):
+    def get_print_str(self, prefix='', no_instr=False):
         in_edges = ' '.join(f"<{b.offset:x}" for b in self.in_edges)
         out_edges = ' '.join(f">{b.offset:x}" for b in self.out_edges)
         attribs   = '' if self.attribs is None else (', ' + ', '.join(a.value for a in self.attribs))
-        instr = "" if no_instr else "\n".join(i.print(prefix=f'{prefix}\t{i.offset:x}: ') for i in self.insns)
+        instr = "" if no_instr else "\n".join(i.get_print_str(prefix=f'{prefix}\t{i.offset:x}: ') for i in self.insns)
         return f"{prefix}BasicBlock {self.offset:x}, stack {self.stack_delta}, {in_edges}, {out_edges}{attribs}\n{instr}"
 
 
@@ -860,8 +872,8 @@ class SSAFunction(SSAElement):
 
         return sorted(list(args), key=lambda x: x[0])
 
-    def print(self):
-        bbs = "\n\n".join(bb.print(prefix='\t') for bb in self)
+    def get_print_str(self):
+        bbs = "\n\n".join(bb.get_print_str(prefix='\t') for bb in self)
         return f"Function {self.offset:#x}\n{bbs}\n\nFunction {self.offset:#x} end\n"
 
 

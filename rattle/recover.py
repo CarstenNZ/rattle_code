@@ -149,7 +149,7 @@ class InternalRecover(object):
                     ret_block.add_attrib(BlockAttrib.ReturnTo)
 
         for f in self.functions:
-            print(f.print())
+            f.print()
 
         # mark call return blocks
         for func in self.functions:
