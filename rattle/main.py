@@ -180,7 +180,7 @@ def main(argv: Sequence[str] = tuple(sys.argv)) -> None:  # run me with python3,
 
     for function in sorted(ssa.functions, key=lambda f: f.offset):
         g = rattle.ControlFlowGraph(function)
-        t = tempfile.NamedTemporaryFile(suffix='.dot', mode='w')
+        t = tempfile.NamedTemporaryFile(suffix='.dot', mode='w')        # TODO, use ControlFlowGrap.gen_png
         t.write(g.dot())
         t.flush()
 

@@ -6,6 +6,7 @@ import copy
 
 import cbor2
 
+from .recover_internal_funcs import InternalFuncRecover
 from .ssa import *
 
 logger = logging.getLogger(__name__)
@@ -37,7 +38,7 @@ class InternalRecover(object):
 
         self.guarenteed_optimizations()
 
-        if split_functions:
+        if split_functions:     # TODO, what's the point of not doing it ?
             self.split_functions(dispatch)
 
         # Remove stop-only blocks from dispatch
