@@ -475,7 +475,7 @@ class SSABasicBlock(SSAElement):
 
         self.insns = []
 
-        # CLEANUP, move stack into InternalRecover.simplify_blocks, no need to keep it?
+        # CLEANUP, put stack with functionality into a separate class
         self.stack: List[StackValue] = [PlaceholderStackValue(-x, self) for x in range(32, 0, -1)]
         self.stack_delta = 0
 
@@ -623,9 +623,10 @@ class SSABasicBlock(SSAElement):
     def get_print_str(self, prefix='', no_instr=False):
         in_edges = ' '.join(f"<{b.offset:x}" for b in self.in_edges)
         out_edges = ' '.join(f">{b.offset:x}" for b in self.out_edges)
-        attribs   = '' if self.attribs is None else (', ' + ', '.join(a.value for a in self.attribs))
+        attribs   = '' if self.attribs is None else (', ' + ', '.join(sorted(a.value for a in self.attribs)))
         instr = "" if no_instr else "\n".join(i.get_print_str(prefix=f'{prefix}\t{i.offset:x}: ') for i in self.insns)
-        return f"{prefix}BasicBlock {self.offset:x}, stack {self.stack_delta}, {in_edges}, {out_edges}{attribs}\n{instr}"
+        return f"{prefix}BasicBlock {self.offset:x}, stack {self.stack_delta}, {in_edges}, {out_edges}{attribs}\n" \
+               f"{instr}"
 
 
 

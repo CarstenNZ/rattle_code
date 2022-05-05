@@ -121,7 +121,7 @@ class InternalRecover(object):
         internal_funcs = InternalFuncRecover(dispatch_function).split_off()
         self.functions.extend(internal_funcs)
 
-        # insert ICALL and loop until all functions are recovered
+        # 4) insert ICALL and loop until all functions are recovered
         for func in self.functions:
             # replace call jumps with ICALL
             for block in func:
@@ -131,7 +131,8 @@ class InternalRecover(object):
 
                     # replace jump with call
                     call = InternalCall(None, 2, jump_instr.offset, block)
-                    call.append_argument(jump_instr.arguments[0])
+                    call.append_argument(jump_instr.arguments[0])           # CLEANUP, pass to constructor
+                    call.append_argument(block.stack_pop())                 # must pass at least the return address
                     block._initial_insns[-1] = call     # TODO, via block method
 
             for run_nbr in count(1):
@@ -145,11 +146,7 @@ class InternalRecover(object):
                 logging.warning("more than one iteration; check the func.reset for multiple iterations ?")
 
 
-        # working/fixing to here
-        [f.print() for f in self.functions]
-        breakpoint()
-
-        # mark return blocks
+        # 5) mark return blocks
         for func in self.functions:
             for block in func:
                 if block.has_attrib(BlockAttrib.Caller):
@@ -157,13 +154,14 @@ class InternalRecover(object):
 
                     # get the return block
                     ret_arg = call_instr.arguments[1]       # optimistic guess, based on compiler pattern, not reliable
-                    ret_adr = ret_arg.writer.arguments[0].concrete_value         # TODO, what if the result is not a constant ?
+                    ret_adr = ret_arg.writer.arguments[0].concrete_value
                     ret_block = func.blockmap[ret_adr]
 
                     ret_block.add_attrib(BlockAttrib.ReturnTo)
 
-        for f in self.functions:
-            f.print()
+        # working/fixing to here
+        [f.print() for f in self.functions]
+        breakpoint()
 
         # mark call return blocks
         for func in self.functions:
