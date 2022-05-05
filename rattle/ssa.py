@@ -54,8 +54,8 @@ class SSAElement(ABC):
 class StackValue(SSAElement):
     def __init__(self, value: int) -> None:
         self.value = value
-        self._writer = None
-        self._readers = set()
+        self._writer = None             # CLEANUP, rename to definition
+        self._readers = set()           # CLEANUP, rename to use
 
     def to_json_dict(self) -> Dict:
         """ returns a json encode-able dict
@@ -85,7 +85,7 @@ class StackValue(SSAElement):
         try:
             self._readers.remove(insn)
         except Exception:
-            pass
+            pass                # CLEANUP, why would we end up here
 
     def resolve(self) -> Tuple['StackValue', bool]:
         return (self, False)
@@ -258,7 +258,7 @@ class SSAInstruction(SSAElement):
         self.parent_block: SSABasicBlock = parent_block
         self.comment: Optional[str] = None
 
-        self._return_value: Optional[StackValue] = None
+        self._return_value: Optional[StackValue] = None     # CLEANUP, this is lhs, also derive SSADefinition class and move lhs
 
     def to_json_dict(self) -> Dict:
         """ returns a json encode-able dict
@@ -275,9 +275,10 @@ class SSAInstruction(SSAElement):
             'args': [fmt_arg(a) for a in self.arguments],
         }
 
-    def clear(self):
-        self.arguments.clear()
+    def reset(self) -> 'SSAInstruction':
+        self.clear_arguments()
         self._return_value = None
+        return self
 
     def __repr__(self) -> str:
         def key_for_PHI_arguments(sv: StackValue):
@@ -579,10 +580,12 @@ class SSABasicBlock(SSAElement):
         self.fallthrough_edge = target_block
         target_block.in_edges.add(self)
 
-    def clear(self, clear_edges: bool) -> None:
-        self.insns = []
+    def reset(self, clear_edges: bool) -> None:
         self.stack = [PlaceholderStackValue(-x, self) for x in range(32, 0, -1)]
         self.stack_delta = 0
+
+        # remove phis, clear remaining instructions
+        self.insns = [i.reset() for i in self.insns if not isinstance(i.insn, PHIInstruction)]
 
         if clear_edges:
             self.in_edges.clear()
@@ -677,9 +680,9 @@ class SSAFunction(SSAElement):
         self.num_values += 1
         return value
 
-    def clear(self, clear_edges: bool) -> None:
+    def reset(self, clear_edges: bool) -> None:
         for block in self.blocks:
-            block.clear(clear_edges)
+            block.reset(clear_edges)
 
         self.phis = {}
         self.num_values = 0

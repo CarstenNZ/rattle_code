@@ -3,6 +3,7 @@
 
 import binascii
 import copy
+from itertools import count
 
 import cbor2
 
@@ -104,14 +105,13 @@ class InternalRecover(object):
             except:
                 pass
 
-        # recover the whole program as a single function
-        dirty = True
-        while dirty:
-            dispatch_function.clear(clear_edges=False)
-            self.repopulate_blocks(dispatch_function)
-            dirty = self.recover_loop(dispatch_function)
+        # 1) recover the whole program as a single function
+        for _runs in count(1):
+            dispatch_function.reset(clear_edges=False)
+            if not self.recover_loop(dispatch_function):
+                break
 
-        # separate the internal functions
+        # 2) separate the internal functions
         internal_funcs = InternalFuncRecover(dispatch_function).split_off()
         self.functions.extend(internal_funcs)
 
@@ -121,8 +121,7 @@ class InternalRecover(object):
 
             while dirty:
                 # reset
-                func.clear(clear_edges=True)
-                self.repopulate_blocks(func)        # TODO, remove repopulate, make more flexible clear instead
+                func.reset(clear_edges=True)
 
                 # replace call jumps with ICALL
                 for block in func:
@@ -151,9 +150,6 @@ class InternalRecover(object):
 
         for f in self.functions:
             print(f.print())
-
-
-        # TODO get rid of the repoulate call
 
         # mark call return blocks
         for func in self.functions:
@@ -261,14 +257,6 @@ class InternalRecover(object):
 
             if terminator.insn.name == "JUMPI" or not terminator.insn.is_terminator:
                 block.set_fallthrough_target(terminator.offset + terminator.insn.size)
-
-    def repopulate_blocks(self, function: SSAFunction) -> None:
-        for block in function:
-            start = block.offset
-            end = block.end
-
-            for insn in [insn for pc, insn in self.insns.items() if start <= pc < end]:
-                block.insns.append(SSAInstruction(insn, block))
 
     def resolve_xrefs(self, function: SSAFunction) -> bool:
         dirty = False
@@ -758,8 +746,8 @@ class InternalRecover(object):
                     next_block.in_edges.remove(block)
 
                 block.fallthrough_edge = None
-                block.jump_edges.clear()
-                block.in_edges.clear()
+                block.jump_edges.reset()
+                block.in_edges.reset()
                 function.blocks.remove(block)
 
         for function in self.functions:
@@ -795,8 +783,8 @@ class InternalRecover(object):
 
                 next_block.in_edges.remove(block)
                 block.fallthrough_edge = None
-                block.jump_edges.clear()
-                block.in_edges.clear()
+                block.jump_edges.reset()
+                block.in_edges.reset()
                 function.blocks.remove(block)
 
 
