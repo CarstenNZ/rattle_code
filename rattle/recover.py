@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class InternalRecover(object):
     def __init__(self, filedata: bytes, edges: List[Tuple[int, int]], optimize=False, split_functions=True,
                  use_hashes=True) -> None:
-        logger.debug(f'{len(filedata)} bytes of input data')
+        # logger.debug(f'{len(filedata)} bytes of input data')
 
         if use_hashes:          # load hashes from ./hashes.py if requested
             from .hashes import hashes
@@ -111,10 +111,11 @@ class InternalRecover(object):
                 pass
 
         # 2) recover the whole program as a single function
-        for _run_nbr in count(1):
+        for run_nbr in count(1):
             dispatch_function.reset(clear_edges=False)
             if not self.recover_loop(dispatch_function):
                 break
+        logging.debug("recover 2, %d iterations", run_nbr)
 
         # 3) separate the internal functions
         internal_funcs = InternalFuncRecover(dispatch_function).split_off()
@@ -122,23 +123,31 @@ class InternalRecover(object):
 
         # insert ICALL and loop until all functions are recovered
         for func in self.functions:
-            dirty = True
+            # replace call jumps with ICALL
+            for block in func:
+                if block.has_attrib(BlockAttrib.Caller):
+                    jump_instr = block.insns[-1]
+                    assert jump_instr.insn.name == 'JUMP'
 
-            while dirty:
+                    # replace jump with call
+                    call = InternalCall(None, 2, jump_instr.offset, block)
+                    call.append_argument(jump_instr.arguments[0])
+                    block._initial_insns[-1] = call     # TODO, via block method
+
+            for run_nbr in count(1):
                 # reset
-                func.reset(clear_edges=True)
+                func.reset(clear_edges=run_nbr == 1)
+                if not self.recover_loop(func):
+                    break
 
-                # replace call jumps with ICALL
-                for block in func:
-                    if block.has_attrib(BlockAttrib.Caller):
-                        jump_instr = block.insns[-1]
-                        assert jump_instr.insn.name == 'JUMP'
+            logging.debug("recover 3, func %x %d iterations", func.offset, run_nbr)
+            if run_nbr > 1:
+                logging.warning("more than one iteration; check the func.reset for multiple iterations ?")
 
-                        # replace jump with call
-                        call = InternalCall(None, 2, jump_instr.offset, block)
-                        block.insns[-1] = call
 
-                dirty = self.recover_loop(func)
+        # working/fixing to here
+        [f.print() for f in self.functions]
+        breakpoint()
 
         # mark return blocks
         for func in self.functions:

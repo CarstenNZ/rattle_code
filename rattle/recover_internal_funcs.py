@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+import logging
 from typing import Set, Optional, NamedTuple
 
 from .ssa import SSAFunction, SSABasicBlock, BlockAttrib
@@ -86,7 +87,7 @@ class InternalFuncRecover:
                 if intersect := short_func.blocks.intersection(long_func.blocks):
 
                     if intersect == short_func.blocks:          # short is subset of long -> long calls short
-                        print(f"{short_func} part of {long_func}")
+                        logging.debug("%s part of %s", short_func, long_func)
                         long_func.blocks.difference_update(short_func.blocks)
                     else:                                       # overlap
                         # verify that intersection is a shared function (both include it)
