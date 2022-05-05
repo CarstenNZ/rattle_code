@@ -4,7 +4,7 @@
 import functools
 import logging
 from enum import Enum
-from typing import List, Dict, Tuple, Optional, Set, cast, Iterator, Callable, Iterable
+from typing import List, Dict, Tuple, Optional, Set, cast, Iterator, Callable, Iterable, Collection
 
 from rattle.evmasm import EVMAsm
 
@@ -31,7 +31,7 @@ class MethodDispatch(EVMAsm.EVMInstruction):
 
 class InternalCallOp(EVMAsm.EVMInstruction):
     def __init__(self, args: int, offset: int = 0) -> None:
-        super().__init__(0x102, "ICALL", 0, args, 1, 0, "Conditional Internal Call", 0, offset)
+        super().__init__(0x102, "ICALL", 0, args, 0, 0, "Internal Call", 0, offset)
 
 
 class StackValue(object):
@@ -400,8 +400,8 @@ class SSAInstruction(object):
 class BlockAttrib(Enum):
     FuncStart = 'fStart'  # callee, the single entry block
     FuncEnd   = 'fEnd'    # callee, a return block
-    # Caller    = 'ca'  # caller, a block that calls a function
-    # ReturnTo  = 'rt'  # caller, the block the callee returns to
+    Caller    = 'caller'  # caller, a block that calls a function
+    ReturnTo  = 'rTo'     # caller, the block the callee returns to
 
 class SSABasicBlock(object):
     def __init__(self, offset: int, function: 'SSAFunction', attribs: Optional[Set[BlockAttrib]] = None ) -> None:
@@ -514,10 +514,15 @@ class SSABasicBlock(object):
         self.fallthrough_edge = target_block
         target_block.in_edges.add(self)
 
-    def clear(self) -> None:
+    def clear(self, clear_edges: bool) -> None:
         self.insns = []
         self.stack = [PlaceholderStackValue(-x, self) for x in range(32, 0, -1)]
         self.stack_delta = 0
+
+        if clear_edges:
+            self.in_edges.clear()
+            self.fallthrough_edge = None
+            self.out_edges.clear()
 
     def canonicalize(self) -> None:
 
@@ -542,16 +547,15 @@ class SSABasicBlock(object):
 
 
 class SSAFunction(object):
-    num_values: int = 0
-
     def __init__(self, offset: int, name: str = '', hash: int = 0) -> None:
         self.name: str = name
         self._hash: int = hash
         self.offset: int = offset
         self.num_values: int = 0
 
-        self.blocks: List[SSABasicBlock] = []
+        self.blocks: List[SSABasicBlock] = []           # TODO, one of the two is redundant
         self.blockmap: Dict[int, SSABasicBlock] = {}
+
         self.phis: Dict[StackValue, SSAInstruction] = {}
 
     def __repr__(self) -> str:
@@ -598,9 +602,9 @@ class SSAFunction(object):
         self.num_values += 1
         return value
 
-    def clear(self) -> None:
+    def clear(self, clear_edges: bool) -> None:
         for block in self.blocks:
-            block.clear()
+            block.clear(clear_edges)
 
         self.phis = {}
         self.num_values = 0
@@ -630,7 +634,7 @@ class SSAFunction(object):
 
         return extracted
 
-    def remove_blocks(self, blocks: List[SSABasicBlock]) -> None:
+    def remove_blocks(self, blocks: Collection[SSABasicBlock]) -> None:
         for block in blocks:
             try:
                 self.blocks.remove(block)
@@ -784,7 +788,7 @@ class SSAFunction(object):
 
 
 class InternalCall(SSAInstruction):
-    def __init__(self, target: SSAFunction, args: int, offset: int, parent_block: 'SSABasicBlock') -> None:
+    def __init__(self, target: Optional[SSAFunction], args: int, offset: int, parent_block: 'SSABasicBlock') -> None:
         super().__init__(InternalCallOp(args, offset), parent_block)
         self.target: SSAFunction = target
 
@@ -793,7 +797,7 @@ class InternalCall(SSAInstruction):
         if self.return_value:
             rv += f"{self.return_value} = "
 
-        rv += f"ICALL({self.target.desc()}"
+        rv += f"ICALL({self.target.desc() if self.target else '<unknown>'}"
         if len(self.arguments) > 0:
             rv += ', '
 

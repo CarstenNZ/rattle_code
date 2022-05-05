@@ -92,27 +92,82 @@ class InternalRecover(object):
         # Return bytecode without it
         return bytecode[0:metadata_start].encode()
 
-    def recover(self, function: SSAFunction) -> None:
-        self.identify_blocks(function)
+    def recover(self, dispatch_function: SSAFunction) -> None:
+        self.identify_blocks(dispatch_function)
 
         # If we have supplied edges, set them
         for start, end in self.edges:
             try:
-                source = function.blockmap[start]
+                source = dispatch_function.blockmap[start]
                 source.add_jump_target(end)
             except:
                 pass
 
-        while self.recover_loop(function):
-            pass
+        # recover the whole program as a single function
+        dirty = True
+        while dirty:
+            dispatch_function.clear(clear_edges=False)
+            self.repopulate_blocks(dispatch_function)
+            dirty = self.recover_loop(dispatch_function)
+
+        # separate the internal functions
+        internal_funcs = InternalFuncRecover(dispatch_function).split_off()
+        self.functions.extend(internal_funcs)
+
+        # insert ICALL and loop until all functions are recovered
+        for func in self.functions:
+            dirty = True
+
+            while dirty:
+                # reset
+                func.clear(clear_edges=True)
+                self.repopulate_blocks(func)        # TODO, remove repopulate, make more flexible clear instead
+
+                # replace call jumps with ICALL
+                for block in func:
+                    if block.has_attrib(BlockAttrib.Caller):
+                        jump_instr = block.insns[-1]
+                        assert jump_instr.insn.name == 'JUMP'
+
+                        # replace jump with call
+                        call = InternalCall(None, 2, jump_instr.offset, block)
+                        block.insns[-1] = call
+
+                dirty = self.recover_loop(func)
+
+        # mark return blocks
+        for func in self.functions:
+            for block in func:
+                if block.has_attrib(BlockAttrib.Caller):
+                    call_instr = block.insns[-1]
+
+                    # get the return block
+                    ret_arg = call_instr.arguments[1]       # optimistic guess, based on compiler pattern, not reliable
+                    ret_adr = ret_arg.writer.arguments[0].concrete_value         # TODO, what if the result is not a constant ?
+                    ret_block = func.blockmap[ret_adr]
+
+                    ret_block.add_attrib(BlockAttrib.ReturnTo)
+
+        for f in self.functions:
+            print(f.print())
+
+
+        # TODO get rid of the repoulate call
+
+        # mark call return blocks
+        for func in self.functions:
+            for block in func:
+                pass
+
+
+
+        # TODO, need probably to insert some internal calls, resolve doesn't care '
+        breakpoint()
 
     def recover_loop(self, function: SSAFunction) -> bool:
         """ recover given function: block build/analyse, edge discover and phi insertion
-            - returns True if new edges or functions are discorvered
+            - returns True if new edges are discovered
         """
-
-        function.clear()
-        self.repopulate_blocks(function)
 
         for block in function:
             for insn in list(block.insns):  # make a new list because we modify it during iterating
