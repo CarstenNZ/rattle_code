@@ -136,7 +136,6 @@ class InternalRecover(object):
                     block._initial_insns[-1] = call     # TODO, via block method
 
             for run_nbr in count(1):
-                # reset
                 func.reset(clear_edges=run_nbr == 1)
                 if not self.recover_loop(func):
                     break
@@ -144,7 +143,6 @@ class InternalRecover(object):
             logging.debug("recover 3, func %x %d iterations", func.offset, run_nbr)
             if run_nbr > 1:
                 logging.warning("more than one iteration; check the func.reset for multiple iterations ?")
-
 
         # 5) mark return blocks
         for func in self.functions:
@@ -160,7 +158,9 @@ class InternalRecover(object):
                     ret_block.add_attrib(BlockAttrib.ReturnTo)
 
         # working/fixing to here
-        [f.print() for f in self.functions]
+        with open('/wrkShare/funcPrint-step5.txt', 'wt') as s:
+            [f.print(s) for f in self.functions]
+
         breakpoint()
 
         # mark call return blocks
@@ -276,6 +276,24 @@ class InternalRecover(object):
                 block.set_fallthrough_target(terminator.offset + terminator.insn.size)
 
     def resolve_xrefs(self, function: SSAFunction) -> bool:
+        def handle_writers(writer, depth) -> bool:
+            if depth == 0:
+                return False
+
+            dirty = False
+            if writer.insn.is_push:
+                value = cast(ConcreteStackValue, writer.arguments[0])
+                dirty |= block.add_jump_target(value.concrete_value)
+            elif isinstance(writer.insn, PHIInstruction):
+                for arg in writer.arguments:
+                    if arg.writer is None:
+                        continue
+
+                    dirty |= handle_writers(arg.writer, depth - 1)
+
+            return dirty
+        # <def
+
         dirty = False
 
         for block in function:
@@ -289,27 +307,21 @@ class InternalRecover(object):
 
                 if isinstance(target, ConcreteStackValue):
                     dirty |= block.add_jump_target(target.concrete_value)
-                elif not isinstance(target, PlaceholderStackValue) and \
-                        target.writer is not None:
-
-                    def handle_writers(writer, depth) -> bool:
-                        if depth == 0:
-                            return False
-
-                        dirty = False
-                        if writer.insn.is_push:
-                            value = cast(ConcreteStackValue, writer.arguments[0])
-                            dirty |= block.add_jump_target(value.concrete_value)
-                        elif isinstance(writer.insn, PHIInstruction):
-                            for arg in writer.arguments:
-                                if arg.writer is None:
-                                    continue
-
-                                dirty |= handle_writers(arg.writer, depth - 1)
-
-                        return dirty
-
+                elif not isinstance(target, PlaceholderStackValue) and target.writer is not None:
                     dirty |= handle_writers(target.writer, 5)
+
+            elif terminator.insn.name == 'ICALL':
+                ret_found = False
+                for target in terminator.arguments:
+                    if isinstance(target, ConcreteStackValue):
+                        ret_found = block.add_jump_target(target.concrete_value)
+                    elif not isinstance(target, PlaceholderStackValue) and target.writer is not None:
+                        ret_found = handle_writers(target.writer, 5)
+
+                    # CLEANUP, ret_found can't tell us reliable if we found a good return address, because
+                    #           the link could already exist; the symbol_resolve aka handle_writer is a mess
+
+                    dirty |= ret_found
 
         return dirty
 

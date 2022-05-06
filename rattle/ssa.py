@@ -497,7 +497,7 @@ class SSABasicBlock(SSAElement):
         if clear_edges:
             self.in_edges.clear()
             self.fallthrough_edge = None
-            self.out_edges.clear()
+            self.jump_edges.clear()
 
     def to_json_dict(self) -> Dict:
         """ returns a json encode-able dict
